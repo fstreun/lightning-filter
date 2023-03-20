@@ -141,6 +141,10 @@ To run all of the unit and integration tests with different settings (compilatio
 For the performance tests, use the test configurations in the directories `test/perfnet_scion` and `test/perfnet_ip`.
 The `README.md`, in the corresponding directories, provides additional information on the setup and required adjustments.
 
+## CI
+
+TODO
+
 # Documentation
 
 The `docs` directory contains a collection of documentation files. The following list provides an overview of them.
