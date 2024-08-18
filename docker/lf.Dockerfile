@@ -1,10 +1,17 @@
-# LF Builder image
-# Container for building
-FROM ubuntu:jammy AS lf-builder
-ARG UID=1001
-ARG GID=1001
-ARG USER=lf
-ARG CI=false
+# Lightning Filter Base Image
+# Container for building and running the Lightning Filter
+# Contains the necessary dependencies to build and run the Lightning Filter
+#
+# DPDK Version 23.11
+# Go Version 1.21.2
+# SCION Version 0.9.1
+
+FROM ubuntu:jammy AS lf-base
+
+
+# With DPDK_MINIMAL_BUILD set to true, DPDK is build without host machine optimization, e.g., SSE2,
+# providing better compatibility with different systems (useful for CI pipelines).
+ARG DPDK_MINIMAL_BUILD="false"
 
 # Packages for building
 RUN apt-get update && \
@@ -22,11 +29,17 @@ ENV PATH /usr/local/go/bin:$PATH
 
 # Install DPDK
 RUN curl -LO https://fast.dpdk.org/rel/dpdk-23.11.tar.xz && \
-    echo "896c09f5b45b452bd77287994650b916 dpdk-23.11.tar.xz" | md5sum -c && \
-    tar xJf dpdk-23.11.tar.xz && cd dpdk-23.11 && \
+echo "896c09f5b45b452bd77287994650b916 dpdk-23.11.tar.xz" | md5sum -c && \
+tar xJf dpdk-23.11.tar.xz && cd dpdk-23.11 && \
     meson setup build && cd build && \
-    if [ "$CI" = "true" ] ; then meson configure -Dmachine=default && meson compile; fi && \
+    if [ "$DPDK_MINIMAL_BUILD" = "true" ] ; then meson configure -Dmachine=default && meson compile; fi && \
     ninja && meson install && ldconfig
+
+# Development image
+FROM lf-base AS lf-dev
+ARG UID=1001
+ARG GID=1001
+ARG USER=lf
 
 # Allow the lf-build user to use sudo without a password
 RUN groupadd --gid $GID --non-unique $USER && \
@@ -38,10 +51,6 @@ USER $USER
 ENV USER $USER
 # Set the working directory for the user
 WORKDIR /home/$USER
-
-# LF Developer Image
-# Container for developing (building, linting, testing)
-FROM lf-builder AS lf-developer
 
 # Add packages for developing, linting, and testing
 RUN sudo apt-get update && \
@@ -64,8 +73,3 @@ RUN git clone https://github.com/scionproto/scion.git && \
     go build -o ./bin/ ./scion-pki/cmd/scion-pki
 ENV SCION_DIR=/home/$USER/scion
 ENV SCION_BIN=/home/$USER/scion/bin
-
-# Set the working directory for the user
-WORKDIR /home/$USER
-USER $USER
-ENV USER $USER

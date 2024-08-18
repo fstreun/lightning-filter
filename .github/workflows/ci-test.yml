@@ -1,0 +1,32 @@
+name: CI - Build and Tests
+
+on:
+  push:
+    branches: ["open-source"]
+  pull_request:
+    branches: ["open-source"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start dev container
+        run: cd docker && ./docker.sh dev_create && ./docker.sh dev_up
+      - name: Run tests in dev container
+        run: cd docker && ./docker.sh dev_exec ls -al lightning-filter &&  ./docker.sh dev_exec bash lightning-filter/tests.sh
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts
+          path: tmp/tests_artifacts
+      - name: Clear artifacts
+        run: rm -rf tmp/tests_artifacts
+      - name: Stop dev container
+        run: cd docker && ./docker.sh dev_down
