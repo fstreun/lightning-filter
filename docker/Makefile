@@ -27,7 +27,7 @@ build-base-image:
 	@echo "Building $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(TAG_BASE)"
 	docker build --target lf-base -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(TAG_BASE) \
 	 --build-arg DPDK_MINIMAL_BUILD=$(DPDK_MINIMAL_BUILD) \
-	 -f base.Dockerfile .
+	 -f lf.Dockerfile .
 
 pull-base-image:
 	@echo "Pulling $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME) by SHA256 digest"
@@ -47,7 +47,7 @@ build-dev-image:
 	@echo "Building $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(TAG_DEV)"
 	docker build --target lf-dev -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(TAG_DEV) \
 	 --build-arg DPDK_MINIMAL_BUILD=$(DPDK_MINIMAL_BUILD) \
-	 -f base.Dockerfile .
+	 -f lf.Dockerfile .
 
 pull-dev-image:
 	@echo "Pulling $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(TAG_DEV) by SHA256 digest"
