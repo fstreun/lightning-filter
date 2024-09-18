@@ -554,7 +554,7 @@ handle_dict_stats(const char *cmd __rte_unused, const char *params __rte_unused,
 	rte_tel_data_add_dict_uint(d, "entries_max",
 			rte_hash_max_key_id(tel_ctx->dict));
 
-	rte_spinlock_lock(&tel_ctx->management_lock);
+	rte_spinlock_unlock(&tel_ctx->management_lock);
 
 	return 0;
 }
