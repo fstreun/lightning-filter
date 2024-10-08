@@ -1,5 +1,5 @@
-use uds::{UnixSeqpacketListener, UnixSeqpacketConn};
-use serde_json::{Result, Value};
+use uds::UnixSeqpacketConn;
+use serde_json::Value;
 
 
 #[derive(Debug)]
@@ -12,7 +12,9 @@ pub struct DpdkTelemetry {
 }
 
 impl DpdkTelemetry {
-    pub fn new(socket_path: String) -> Self {
+    pub fn new(file_prefix: String) -> Self {
+        let runtime_dir: String = get_dpdk_runtime_dir(&file_prefix);
+        let socket_path: String = format!("{}/dpdk_telemetry.v2", runtime_dir);
 
         // Check if socket exists by reading from it
         let socket: UnixSeqpacketConn = UnixSeqpacketConn::connect(socket_path.clone()).unwrap();
@@ -62,4 +64,9 @@ impl Drop for DpdkTelemetry {
     fn drop(&mut self) {
         let _ = self.socket.shutdown(std::net::Shutdown::Both);
     }
+}
+
+fn get_dpdk_runtime_dir(dpdk_file_prefix: &str) -> String {
+    let dpdk_runtime_dir = format!("/var/run/dpdk/{}", dpdk_file_prefix);
+    return dpdk_runtime_dir;
 }

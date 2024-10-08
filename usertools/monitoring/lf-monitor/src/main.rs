@@ -2,7 +2,6 @@
 use prometheus_client::encoding::text::encode;
 use prometheus_client::registry::Registry;
 use nickel::{Nickel, HttpRouter};
-use serde_json::Value;
 use clap::Parser;
 
 mod prometheus;
@@ -34,17 +33,8 @@ fn main() {
     let args = Args::parse();
 
     // Create DPDK Telemetry object
-    let dpdk_runtime_dir = get_dpdk_runtime_dir(&args.dpdk_file_prefix);
-    let dpdk_telemetry: DpdkTelemetry = DpdkTelemetry::new(dpdk_runtime_dir);
-    // Some example queries
-    let response: Value = dpdk_telemetry.query("/");
-    println!("{}", serde_json::to_string_pretty(&response).unwrap());
-    let response = dpdk_telemetry.query("/ethdev/list");
-    println!("{}", serde_json::to_string_pretty(&response).unwrap());
-    let response = dpdk_telemetry.query("/ethdev/stats");
-    println!("{}", serde_json::to_string_pretty(&response).unwrap());
-    let response = dpdk_telemetry.query("/lf/keymanager/worker/stats,1");
-    println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    let dpdk_telemetry: DpdkTelemetry = DpdkTelemetry::new(args.dpdk_file_prefix);
+    println!("{:?}", dpdk_telemetry);
 
     // Create Prometheus metrics
     let prometheus_metrics: PrometheusMetrics = PrometheusMetrics::new();
@@ -65,8 +55,3 @@ fn main() {
 
 }
 
-
-fn get_dpdk_runtime_dir(dpdk_file_prefix: &str) -> String {
-    let dpdk_runtime_dir = format!("/var/run/dpdk/{}", dpdk_file_prefix);
-    return dpdk_runtime_dir;
-}
