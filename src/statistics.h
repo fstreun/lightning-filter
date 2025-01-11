@@ -67,22 +67,17 @@
 	M(uint64_t, outbound_error)         \
 	M(uint64_t, outbound_no_key)
 
-
-struct lf_statistics_worker_counter {
-	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_DECL)
-};
-
 struct lf_statistics_worker {
-	struct lf_statistics_worker_counter counter;
+	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_DECL)
 } __rte_cache_aligned;
 
 struct lf_statistics {
 	struct lf_statistics_worker *worker[LF_MAX_WORKER];
 	uint16_t nb_workers;
-} __rte_cache_aligned;
+};
 
 #define lf_statistics_worker_counter_add(statistics_worker, field, val) \
-	statistics_worker->counter.field += val
+	statistics_worker->field += val
 
 #define lf_statistics_worker_counter_inc(statistics_worker, field) \
 	lf_statistics_worker_counter_add(statistics_worker, field, 1)

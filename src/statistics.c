@@ -83,36 +83,25 @@ escape_json(const char *in, char *out, int out_len)
 	return -1;
 }
 
-/**
- * List of all worker counter names.
- */
-const struct lf_telemetry_field_name worker_counter_strings[] = {
-	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_NAME)
-};
-#define WORKER_COUNTER_NUM \
-	(sizeof(worker_counter_strings) / sizeof(struct lf_telemetry_field_name))
-
 void
-add_worker_statistics(struct lf_statistics_worker_counter *res,
-		struct lf_statistics_worker_counter *a,
-		struct lf_statistics_worker_counter *b)
+add_worker_statistics(struct lf_statistics_worker *res,
+		struct lf_statistics_worker *a,
+		struct lf_statistics_worker *b)
 {
 	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_OP_ADD)
 }
 
 void
-reset_worker_statistics(struct lf_statistics_worker_counter *counter)
+reset_worker_statistics(struct lf_statistics_worker *counter)
 {
 	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_RESET)
 }
 
 void
-lf_statistics_worker_counter_add_dict(struct rte_tel_data *d,
-		struct lf_statistics_worker_counter *counter)
+counter_field_add_dict(struct rte_tel_data *d,
+		struct lf_statistics_worker *c)
 {
-#define _(TYPE, NAME) rte_tel_data_add_dict_uint(d, #NAME, (counter)->NAME);
-	LF_STATISTICS_WORKER_COUNTER(_)
-#undef _
+	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_ADD_DICT)
 }
 
 static int
@@ -130,16 +119,16 @@ handle_worker_stats(const char *cmd __rte_unused, const char *params,
 		if (worker_id < 0 || worker_id >= telemetry_ctx->nb_workers) {
 			return -EINVAL;
 		}
-		add_worker_statistics(&total_stats.counter, &total_stats.counter,
-				&telemetry_ctx->worker[worker_id]->counter);
+		add_worker_statistics(&total_stats, &total_stats,
+				telemetry_ctx->worker[worker_id]);
 	} else {
 		for (worker_id = 0; worker_id < telemetry_ctx->nb_workers;
 				++worker_id) {
-			add_worker_statistics(&total_stats.counter, &total_stats.counter,
-					&telemetry_ctx->worker[worker_id]->counter);
+			add_worker_statistics(&total_stats, &total_stats,
+					telemetry_ctx->worker[worker_id]);
 		}
 	}
-	lf_statistics_worker_counter_add_dict(d, &total_stats.counter);
+	counter_field_add_dict(d, &total_stats);
 	return 0;
 }
 
@@ -215,7 +204,7 @@ lf_statistics_init(struct lf_statistics *stats,
 			return -1;
 		}
 
-		reset_worker_statistics(&stats->worker[worker_id]->counter);
+		reset_worker_statistics(stats->worker[worker_id]);
 	}
 
 	/*
