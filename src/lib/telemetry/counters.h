@@ -15,7 +15,7 @@
 /**
  * Macro to define all fields of a counter.
  */
-#define LF_TELEMETRY_FIELD_DECL(TYPE, NAME)  TYPE NAME;
+#define LF_TELEMETRY_FIELD_DECL(TYPE, NAME) TYPE NAME;
 
 /**
  * Macro to reset all fields of a counter.
@@ -25,7 +25,7 @@
 /**
  * Macro to declare all fields names of a counter.
  */
-#define LF_TELEMETRY_FIELD_NAME(TYPE, NAME)  { #NAME },
+#define LF_TELEMETRY_FIELD_NAME(TYPE, NAME) { #NAME },
 
 /**
  * Macro to add all fields of two counters together.
@@ -36,8 +36,8 @@
 
 /**
  * Macro to add all fields of a counter to a telemetry dictionary.
- * Expects d to be a pointer to the telemetry dictionary and c to be a pointer to
- * the counter.
+ * Expects d to be a pointer to the telemetry dictionary and c to be a pointer
+ * to the counter.
  */
 #define LF_TELEMETRY_FIELD_ADD_DICT(TYPE, NAME) \
 	rte_tel_data_add_dict_uint(d, #NAME, (c)->NAME);

@@ -85,8 +85,7 @@ escape_json(const char *in, char *out, int out_len)
 
 void
 add_worker_statistics(struct lf_statistics_worker *res,
-		struct lf_statistics_worker *a,
-		struct lf_statistics_worker *b)
+		struct lf_statistics_worker *a, struct lf_statistics_worker *b)
 {
 	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_OP_ADD)
 }
@@ -98,8 +97,7 @@ reset_worker_statistics(struct lf_statistics_worker *counter)
 }
 
 void
-counter_field_add_dict(struct rte_tel_data *d,
-		struct lf_statistics_worker *c)
+counter_field_add_dict(struct rte_tel_data *d, struct lf_statistics_worker *c)
 {
 	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_ADD_DICT)
 }
