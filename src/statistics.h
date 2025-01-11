@@ -21,11 +21,6 @@
  */
 
 /**
- * Minimal time in ms between aggregating statistics from other workers.
- */
-#define LF_STATISTICS_MIN_AGGREGATION_INTERVAL 0.5 /* seconds */
-
-/**
  * Declaration of the worker counter with all its fields.
  */
 #define LF_STATISTICS_WORKER_COUNTER(M) \
@@ -78,33 +73,16 @@ struct lf_statistics_worker_counter {
 };
 
 struct lf_statistics_worker {
-	_Atomic(struct lf_statistics_worker_counter *) active_counter;
-	struct lf_statistics_worker_counter counter[2];
+	struct lf_statistics_worker_counter counter;
 } __rte_cache_aligned;
 
 struct lf_statistics {
 	struct lf_statistics_worker *worker[LF_MAX_WORKER];
 	uint16_t nb_workers;
-
-	int current_state;
-
-	/* Workers' Quiescent State Variable */
-	struct rte_rcu_qsbr *qsv;
-
-	struct lf_statistics_worker_counter aggregate_global;
-	struct lf_statistics_worker_counter aggregate_worker[LF_MAX_WORKER];
-
-	/* timestamp of last statistics aggregation (nanoseconds) */
-	uint64_t last_aggregate;
-
-	/* management lock */
-	rte_spinlock_t lock;
 } __rte_cache_aligned;
 
 #define lf_statistics_worker_counter_add(statistics_worker, field, val) \
-	atomic_load_explicit(&(statistics_worker)->active_counter,          \
-			memory_order_relaxed)                                       \
-			->field += val
+	statistics_worker->counter.field += val
 
 #define lf_statistics_worker_counter_inc(statistics_worker, field) \
 	lf_statistics_worker_counter_add(statistics_worker, field, 1)
@@ -156,7 +134,6 @@ lf_statistics_close(struct lf_statistics *stats);
  */
 int
 lf_statistics_init(struct lf_statistics *stats,
-		uint16_t worker_lcores[LF_MAX_WORKER], uint16_t nb_workers,
-		struct rte_rcu_qsbr *qsv);
+		uint16_t worker_lcores[LF_MAX_WORKER], uint16_t nb_workers);
 
 #endif /* LF_STATISTICS_H */
