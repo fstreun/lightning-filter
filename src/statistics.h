@@ -122,9 +122,6 @@ lf_statistics_close(struct lf_statistics *stats);
  * @param worker_lcores The lcore assignment for the workers, which determines
  * the socket for which memory is allocated.
  * @param nb_workers Number of worker contexts to be created.
- * @param qsv Workers' QS variable for the RCU synchronization. The QS variable
- * can be shared with other services, i.e., other processes call check on it,
- * because the statistics service calls it rarely and can also wait.
  * @return 0 if successful.
  */
 int
