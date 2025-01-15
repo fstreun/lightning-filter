@@ -87,6 +87,7 @@ struct lf_statistics_ia_key {
 struct lf_statistics_worker {
 	struct lf_statistics_worker_counter counter;
 	struct rte_hash *ia_dict;
+	struct lf_statistics_ia_counter untracked_ia;
 };
 
 struct lf_statistics {
@@ -135,9 +136,8 @@ lf_statistics_get_ia_counter(struct lf_statistics_worker *stats,
 
 	key_id = rte_hash_lookup_data(stats->ia_dict, &key, (void **)&data);
 	if (key_id < 0) {
-		return NULL;
+		return &stats->untracked_ia;
 	}
-	// TODO: what to do if ia is not tracked? Get dedicated counter?
 	return data;
 }
 

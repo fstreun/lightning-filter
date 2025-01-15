@@ -161,7 +161,8 @@ handle_ia_stats_list(const char *cmd __rte_unused,
 /** TODO
  * params:
  * - Null: aggregated over all ISD ASes and DRKey protocols
- * - "<ISD AS>, <DRKey protocol>": statistics for a specific ISD AS and DRKey
+ * - "<ISD AS>,<DRKey protocol>": statistics for a specific ISD AS and DRKey
+ * - "?,?": statistics for non-tracked ISD-ASes and DRKey protocols
  * protocol
  */
 static int
@@ -213,39 +214,48 @@ handle_ia_stats(const char *cmd __rte_unused, const char *p,
 			err = -1;
 			goto error;
 		}
-		res = lf_parse_isd_as(tokens[0], &isd_as);
-		if (res != 0) {
-			LF_STATISTICS_LOG(ERR,
-					"unexpected parameter (failed to parse ISD-AS)\n");
-			err = -1;
-			goto error;
-		}
-		res = lf_parse_unum(tokens[1], &drkey_protocol);
-		if (res != 0 || drkey_protocol > UINT16_MAX) {
-			LF_STATISTICS_LOG(ERR, "unexpected parameter (failed to parse "
-								   "DRKey protocol number)\n");
-			err = -1;
-			goto error;
-		}
-		for (worker_id = 0; worker_id < telemetry_ctx->nb_workers;
-				worker_id++) {
-			struct lf_statistics_ia_key key = {
-				.ia = rte_cpu_to_be_64(isd_as),
-				.drkey_protocol = rte_cpu_to_be_16((uint16_t)drkey_protocol),
-			};
-			struct lf_statistics_ia_counter *data;
-			res = rte_hash_lookup_data(
-					telemetry_ctx->worker[worker_id]->ia_dict, &key,
-					(void **)&data);
-			if (res < 0) {
+		if (strcmp(tokens[0], "?") == 0 && strcmp(tokens[1], "?") == 0) {
+			for (worker_id = 0; worker_id < telemetry_ctx->nb_workers;
+					worker_id++) {
+				add_ia_statistics(&total_stats, &total_stats,
+						&telemetry_ctx->worker[worker_id]->untracked_ia);
+			}
+		} else {
+			res = lf_parse_isd_as(tokens[0], &isd_as);
+			if (res != 0) {
 				LF_STATISTICS_LOG(ERR,
-						"unexpected parameter (not found <ISD-AS>,<DRKey "
-						"Protocol>: " PRIISDAS ",%d)\n",
-						PRIISDAS_VAL(isd_as), drkey_protocol);
+						"unexpected parameter (failed to parse ISD-AS)\n");
 				err = -1;
 				goto error;
 			}
-			add_ia_statistics(&total_stats, &total_stats, data);
+			res = lf_parse_unum(tokens[1], &drkey_protocol);
+			if (res != 0 || drkey_protocol > UINT16_MAX) {
+				LF_STATISTICS_LOG(ERR, "unexpected parameter (failed to parse "
+									   "DRKey protocol number)\n");
+				err = -1;
+				goto error;
+			}
+			for (worker_id = 0; worker_id < telemetry_ctx->nb_workers;
+					worker_id++) {
+				struct lf_statistics_ia_key key = {
+					.ia = rte_cpu_to_be_64(isd_as),
+					.drkey_protocol =
+							rte_cpu_to_be_16((uint16_t)drkey_protocol),
+				};
+				struct lf_statistics_ia_counter *data;
+				res = rte_hash_lookup_data(
+						telemetry_ctx->worker[worker_id]->ia_dict, &key,
+						(void **)&data);
+				if (res < 0) {
+					LF_STATISTICS_LOG(ERR,
+							"unexpected parameter (not found <ISD-AS>,<DRKey "
+							"Protocol>: " PRIISDAS ",%d)\n",
+							PRIISDAS_VAL(isd_as), drkey_protocol);
+					err = -1;
+					goto error;
+				}
+				add_ia_statistics(&total_stats, &total_stats, data);
+			}
 		}
 	}
 	telemetry_add_dict_ia_statistics(d, &total_stats);
