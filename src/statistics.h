@@ -11,6 +11,7 @@
 #include <rte_rcu_qsbr.h>
 #include <rte_spinlock.h>
 
+#include "config.h"
 #include "lf.h"
 #include "lib/telemetry/counters.h"
 
@@ -53,31 +54,51 @@
                                         \
 	/* inbound packet */                \
 	M(uint64_t, error)                  \
-	M(uint64_t, no_key)                 \
-	M(uint64_t, invalid_mac)            \
-	M(uint64_t, invalid_hash)           \
-	M(uint64_t, outdated_timestamp)     \
-	M(uint64_t, duplicate)              \
-	M(uint64_t, ratelimit_as)           \
-	M(uint64_t, ratelimit_system)       \
-	M(uint64_t, ratelimit_be)           \
-	M(uint64_t, valid)                  \
                                         \
 	/* outbound packet */               \
 	M(uint64_t, outbound_error)         \
 	M(uint64_t, outbound_no_key)
 
-struct lf_statistics_worker {
+struct lf_statistics_worker_counter {
 	LF_STATISTICS_WORKER_COUNTER(LF_TELEMETRY_FIELD_DECL)
 } __rte_cache_aligned;
+
+#define LF_STATISTICS_IA_COUNTER(M) \
+	M(uint64_t, error)              \
+	M(uint64_t, no_key)             \
+	M(uint64_t, invalid_mac)        \
+	M(uint64_t, invalid_hash)       \
+	M(uint64_t, outdated_timestamp) \
+	M(uint64_t, duplicate)          \
+	M(uint64_t, ratelimit_as)       \
+	M(uint64_t, ratelimit_system)   \
+	M(uint64_t, ratelimit_be)       \
+	M(uint64_t, valid)
+
+struct lf_statistics_ia_counter {
+	LF_STATISTICS_IA_COUNTER(LF_TELEMETRY_FIELD_DECL)
+} __rte_cache_aligned;
+
+struct lf_statistics_ia_key {
+	uint64_t ia;
+	uint16_t drkey_protocol;
+} __attribute__((__packed__));
+
+struct lf_statistics_worker {
+	struct lf_statistics_worker_counter counter;
+	struct rte_hash *ia_dict;
+};
 
 struct lf_statistics {
 	struct lf_statistics_worker *worker[LF_MAX_WORKER];
 	uint16_t nb_workers;
+
+	/* synchronize management */
+	rte_spinlock_t management_lock;
 };
 
 #define lf_statistics_worker_counter_add(statistics_worker, field, val) \
-	statistics_worker->field += val
+	statistics_worker->counter.field += val
 
 #define lf_statistics_worker_counter_inc(statistics_worker, field) \
 	lf_statistics_worker_counter_add(statistics_worker, field, 1)
@@ -103,6 +124,40 @@ lf_statistics_worker_add_burst(struct lf_statistics_worker *statistics_worker,
 	}
 }
 
+inline static struct lf_statistics_ia_counter *
+lf_statistics_get_ia_counter(struct lf_statistics_worker *stats,
+		uint64_t isd_as, uint16_t drkey_protocol)
+{
+	struct lf_statistics_ia_key key = { .ia = isd_as,
+		.drkey_protocol = drkey_protocol };
+	struct lf_statistics_ia_counter *data;
+	int32_t key_id;
+
+	key_id = rte_hash_lookup_data(stats->ia_dict, &key, (void **)&data);
+	if (key_id < 0) {
+		return NULL;
+	}
+	// TODO: what to do if ia is not tracked? Get dedicated counter?
+	return data;
+}
+
+#define lf_statistics_ia_counter_add(stats, isd_as, drkey_protocol, field,  \
+		val)                                                                \
+	do {                                                                    \
+		struct lf_statistics_ia_counter *data;                              \
+		data = lf_statistics_get_ia_counter(stats, isd_as, drkey_protocol); \
+		if (data != NULL) {                                                 \
+			data->field += val;                                             \
+		}                                                                   \
+	} while (0)
+
+#define lf_statistics_ia_counter_inc(stats, worker_id, key, field) \
+	lf_statistics_ia_counter_add(stats, worker_id, key, field, 1)
+
+int
+lf_statistics_apply_config(struct lf_statistics *stats,
+		const struct lf_config *config);
+
 /**
  * Frees the content of the statistics struct (not itself).
  * This includes also the workers' structs. Hence, all the workers have to
@@ -122,10 +177,15 @@ lf_statistics_close(struct lf_statistics *stats);
  * @param worker_lcores The lcore assignment for the workers, which determines
  * the socket for which memory is allocated.
  * @param nb_workers Number of worker contexts to be created.
+ * @param qsv Workers' QS variable for the RCU synchronization. The QS variable
+ * can be shared with other services, i.e., other processes call check on it,
+ * because the statistics service calls it rarely (whenever config is updated)
+ * and can also wait.
  * @return 0 if successful.
  */
 int
 lf_statistics_init(struct lf_statistics *stats,
-		uint16_t worker_lcores[LF_MAX_WORKER], uint16_t nb_workers);
+		uint16_t worker_lcores[LF_MAX_WORKER], uint16_t nb_workers,
+		struct rte_rcu_qsbr *qsv);
 
 #endif /* LF_STATISTICS_H */
