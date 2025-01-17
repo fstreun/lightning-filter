@@ -443,11 +443,11 @@ check_config(struct lf_config *config, struct lf_config *config_exp)
 		peer = config->peers;
 		peer_exp = config_exp->peers;
 		peer_counter = 0;
-		while (peer != NULL){
+		while (peer != NULL) {
 			peer_counter++;
 			if (peer_exp == NULL) {
 				error_count++;
-				printf("Error: Found more peers than expected peers were provided");
+				printf("Error: Found more peers than expected peers");
 				break;
 			}
 			res = check_peer(peer, peer_exp);
@@ -462,7 +462,8 @@ check_config(struct lf_config *config, struct lf_config *config_exp)
 			printf("Error: Found less peers than expected");
 		}
 		if (peer_counter != config->nb_peers) {
-			printf("Error: nb_peers = %ld, list length = %d", config->nb_peers, peer_counter);
+			printf("Error: nb_peers = %ld, list length = %d", config->nb_peers,
+					peer_counter);
 		}
 	}
 
