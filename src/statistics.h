@@ -151,8 +151,8 @@ lf_statistics_get_ia_counter(struct lf_statistics_worker *stats,
 		}                                                                   \
 	} while (0)
 
-#define lf_statistics_ia_counter_inc(stats, worker_id, key, field) \
-	lf_statistics_ia_counter_add(stats, worker_id, key, field, 1)
+#define lf_statistics_ia_counter_inc(stats, isd_as, drkey_protocol, field) \
+	lf_statistics_ia_counter_add(stats, isd_as, drkey_protocol, field, 1)
 
 int
 lf_statistics_apply_config(struct lf_statistics *stats,
